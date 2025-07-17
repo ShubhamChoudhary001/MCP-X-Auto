@@ -12,6 +12,7 @@ const server = new McpServer({
 // ... set up server resources, tools, and prompts ...
 
 const app = express();
+app.use(express.json());
 
 
 server.tool(
@@ -37,10 +38,11 @@ server.tool(
 server.tool(
     "createPost",
     "Create a post on X formally known as Twitter ", {
-    status: z.string()
+    status: z.string(),
+    mediaPath: z.string().optional()
 }, async (arg) => {
-    const { status } = arg;
-    return createPost(status);
+    const { status, mediaPath } = arg;
+    return createPost(status, mediaPath);
 })
 
 
@@ -64,6 +66,17 @@ app.post("/messages", async (req, res) => {
         await transport.handlePostMessage(req, res);
     } else {
         res.status(400).send('No transport found for sessionId');
+    }
+});
+
+app.post("/create-post", async (req, res) => {
+    const { status, mediaPath } = req.body;
+    try {
+        await createPost(status, mediaPath);
+        res.json({ message: "Tweet posted successfully!" });
+    } catch (err) {
+        console.error("Twitter error:", JSON.stringify(err, null, 2)); // Log the full error object
+        res.status(500).json({ message: "Failed to post tweet.", error: err.message });
     }
 });
 
